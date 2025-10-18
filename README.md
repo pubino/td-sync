@@ -1,0 +1,52 @@
+# Tiny Data Sync
+
+Tiny Data Sync schedules recurring `rsync` synchronisations through Slurm. It ingests `.env` configuration profiles and produces self-resubmitting batch jobs that keep pairs of directories in sync on a predictable cadence.
+
+## Features
+
+- Auto-discovers configuration profiles from `$HOME/.config/td-sync.d` or `$TD_CONFIG_DIR`.
+- Generates per-profile Slurm job scripts that execute `rsync`, log results, send notifications, and requeue themselves with `--begin=+TD_SUBMIT_INTERVAL`.
+- Creates and rotates log files under `$PWD/logs` or `$TD_LOG_DIR` with optional retention via `TD_LOG_RETENTION_DAYS`.
+- Provides mock `sbatch`, `mail`, and `sendmail` utilities for isolated testing via `TD_TEST_MODE`.
+- Ships a Docker test environment with `bats-core` for unit tests.
+
+## Quick Start
+
+```bash
+# Run tests inside the provided Docker container
+make test
+```
+
+To exercise the script locally without Docker:
+
+```bash
+export TD_TEST_MODE=1
+./bin/td-sync --help
+```
+
+## Configuration Profiles
+
+Each profile is a simple `.env` file. Required keys:
+
+- `TD_SRC` – source path for `rsync`.
+- `TD_DEST` – destination path for `rsync`.
+- `TD_SUBMIT_INTERVAL` – Slurm delay (seconds or strings like `7days`).
+- `TD_SLURM_ACCOUNT` – Slurm account (defaults to the profile filename when omitted).
+
+Optional keys:
+
+- `TD_NOTIFY` – comma-separated email recipients.
+- `TD_DRY_RUN` – `1` or `true` for `rsync --dry-run`.
+- `TD_SLURM_RUNTIME` – job runtime (`HH:MM:SS`, defaults to `01:00:00`).
+
+## Test Mode
+
+Setting `TD_TEST_MODE` to `1` or `true` prepends `mocks/bin` to `PATH`, replacing `sbatch`, `mail`, and `sendmail` with test doubles. Use this when running unit tests or developing on a system without Slurm or a mail transfer agent.
+
+## Log Retention
+
+If `TD_LOG_RETENTION_DAYS` is set, Tiny Data Sync purges logs older than the configured number of days using `find -mtime` each time the script runs.
+
+## Docker Image
+
+The Dockerfile under `docker/` uses Debian Bookworm, respects the host architecture via `TARGETPLATFORM`, installs `bats-core`, and defaults to executing the Bats test suite.

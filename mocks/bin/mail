@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ -n "${TD_MOCK_OUTPUT:-}" ]]; then
+  printf 'mail %s\n' "$*" >>"$TD_MOCK_OUTPUT"
+fi
+
+cat >/dev/null 2>&1 || true

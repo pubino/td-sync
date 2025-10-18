@@ -1,0 +1,7 @@
+logs/
+*.log
+.DS_Store
+/tmp/
+jobs/*.job.sh
+examples/*.env
+!examples/sample.env

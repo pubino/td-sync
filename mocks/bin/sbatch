@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ -n "${TD_MOCK_OUTPUT:-}" ]]; then
+  printf 'sbatch %s\n' "$*" >>"$TD_MOCK_OUTPUT"
+fi
+
+echo "Submitted batch job ${TD_MOCK_JOB_ID:-12345}"
