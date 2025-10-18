@@ -1,6 +1,6 @@
 # Tiny Data Sync
 
-Tiny Data Sync schedules recurring `rsync` synchronizations through SLURM.
+Tiny Data Sync schedules recurring `rsync` synchronizations through Slurm.
 
 The script ingests `.env` configuration profiles and produces self-resubmitting batch jobs that keep pairs of directories in sync on a predictable cadence.
 
