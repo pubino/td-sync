@@ -43,7 +43,7 @@ Optional keys:
 
 ## Test Mode
 
-Setting `TD_TEST_MODE` to `1` or `true` prepends `mocks/bin` to `PATH`, replacing `sbatch`, `mail`, and `sendmail` with test doubles. Use this when running unit tests or developing on a system without SLURM or a mail transfer agent.
+Setting `TD_TEST_MODE` to `1` or `true` prepends `mocks/bin` to `PATH`, replacing `sbatch`, `mail`, and `sendmail` with test doubles. Use this when running unit tests or developing on a system without Slurm or a mail transfer agent.
 
 ## Log Retention
 
