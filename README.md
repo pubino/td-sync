@@ -40,6 +40,7 @@ Optional keys:
 - `TD_NOTIFY` – comma-separated email recipients.
 - `TD_DRY_RUN` – `1` or `true` for `rsync --dry-run`.
 - `TD_SLURM_RUNTIME` – job runtime (`HH:MM:SS`, defaults to `01:00:00`).
+- `TD_RSYNC_OPTS` – additional `rsync` flags (e.g., `--exclude .venv --delete`).
 
 ## Test Mode
 
@@ -67,6 +68,7 @@ Below is a representative profile and command sequence for a project that mirror
 	TD_NOTIFY=user@example.edu
 	TD_DRY_RUN=1
 	TD_SLURM_RUNTIME=02:00:00
+	TD_RSYNC_OPTS=--exclude .venv --delete
 	```
 
 2. Export any optional runtime variables, then execute the scheduler:
@@ -76,4 +78,14 @@ Below is a representative profile and command sequence for a project that mirror
 	td-sync/bin/td-sync
 	```
 
-3. Tiny Data Sync will submit a Slurm job that performs an `rsync --dry-run`, writes a log under `logs/`, emails a short summary to the specified recipient, and requeues itself to run again after seven days. Switching `TD_DRY_RUN` to `0` promotes the synchronization from a preview to a real transfer.
+3. Tiny Data Sync will submit a Slurm job that performs an `rsync --dry-run`, writes a log under `logs/`, emails a short summary to the specified recipient, and requeues itself to run again after seven days. Switching `TD_DRY_RUN` to `0` promotes the synchronization from a preview to a real transfer. Any custom `TD_RSYNC_OPTS` (such as excluding `.venv`) are appended to the `rsync` invocation.
+
+### Passing Complex rsync Filters
+
+When `TD_RSYNC_OPTS` contains multiple arguments, quote values exactly as you would on the command line. For example:
+
+```env
+TD_RSYNC_OPTS="--filter='- .venv' --filter='- __pycache__'"
+```
+
+Tiny Data Sync evaluates these options inside the generated job script, so each quoted segment is preserved and forwarded to `rsync` without additional escaping.

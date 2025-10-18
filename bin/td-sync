@@ -136,7 +136,7 @@ purge_old_logs() {
 load_profile() {
   local profile_path="$1"
 
-  unset TD_SRC TD_DEST TD_SUBMIT_INTERVAL TD_SLURM_ACCOUNT TD_NOTIFY TD_DRY_RUN TD_SLURM_RUNTIME
+  unset TD_SRC TD_DEST TD_SUBMIT_INTERVAL TD_SLURM_ACCOUNT TD_NOTIFY TD_DRY_RUN TD_SLURM_RUNTIME TD_RSYNC_OPTS
 
   # shellcheck disable=SC1090
   source "$profile_path"
@@ -206,6 +206,7 @@ write_job_script() {
   local log_base_escaped
   local job_name_escaped
   local self_path_escaped
+  local td_rsync_opts_escaped
 
   printf -v mailer_escaped '%q' "$mailer_cmd"
   printf -v td_src_escaped '%q' "${TD_SRC:-}"
@@ -218,6 +219,7 @@ write_job_script() {
   printf -v log_base_escaped '%q' "$profile_label"
   printf -v job_name_escaped '%q' "td-sync-$sanitized_name"
   printf -v self_path_escaped '%q' "$job_script_path"
+  printf -v td_rsync_opts_escaped '%q' "${TD_RSYNC_OPTS:-}"
 
   {
     printf '#!/usr/bin/env bash\n'
@@ -233,7 +235,8 @@ write_job_script() {
   printf 'LOG_BASENAME=%s\n' "$log_base_escaped"
     printf 'MAILER_CMD=%s\n' "$mailer_escaped"
     printf 'JOB_NAME=%s\n' "$job_name_escaped"
-    printf 'SELF_PATH=%s\n\n' "$self_path_escaped"
+    printf 'SELF_PATH=%s\n' "$self_path_escaped"
+    printf 'TD_RSYNC_OPTS=%s\n\n' "$td_rsync_opts_escaped"
     cat <<'EOF'
 mkdir -p "${TD_LOG_DIR}"
 
@@ -245,6 +248,12 @@ trap 'rm -f "$summary_file"' EXIT
 rsync_opts=("-av")
 if [[ "$TD_DRY_RUN" == "1" ]]; then
   rsync_opts+=("--dry-run")
+fi
+if [[ -n "$TD_RSYNC_OPTS" ]]; then
+  extra_opts=()
+  eval "extra_opts=($TD_RSYNC_OPTS)"
+  rsync_opts+=("${extra_opts[@]}")
+  unset extra_opts
 fi
 rsync_opts+=("$TD_SRC" "$TD_DEST")
 
@@ -267,6 +276,9 @@ fi
   printf 'Started: %s\n' "$timestamp"
   printf 'Dry run: %s\n' "$TD_DRY_RUN"
   printf 'Rsync exit status: %s\n' "$rsync_status"
+  if [[ -n "$TD_RSYNC_OPTS" ]]; then
+    printf 'Additional rsync options: %s\n' "$TD_RSYNC_OPTS"
+  fi
   printf 'Log file: %s\n\n' "$log_file"
   printf 'Last 200 lines of log:\n'
   tail -n 200 "$log_file"

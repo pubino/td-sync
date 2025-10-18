@@ -11,6 +11,7 @@ setup() {
   unset TD_CONFIG_DIR
   unset TD_LOG_DIR
   unset TD_LOG_RETENTION_DAYS
+  unset TD_RSYNC_OPTS
   mkdir -p "$HOME"
   rm -f "$TD_MOCK_OUTPUT"
 }
@@ -59,6 +60,7 @@ TD_SLURM_ACCOUNT=research
 TD_NOTIFY=ops@example.com
 TD_DRY_RUN=1
 TD_SLURM_RUNTIME=02:30:00
+TD_RSYNC_OPTS="--exclude .venv --delete"
 EOF
   export TD_CONFIG_DIR="$config_dir"
   export TD_LOG_DIR="$log_dir"
@@ -68,6 +70,7 @@ EOF
   job_script_contents="$(cat "$PROJECT_ROOT/jobs/sample.job.sh")"
   [[ "$job_script_contents" == *"TD_NOTIFY=ops@example.com"* ]]
   [[ "$job_script_contents" == *"TD_DRY_RUN=1"* ]]
+  [[ "$job_script_contents" == *"TD_RSYNC_OPTS=--exclude\\ .venv\\ --delete"* ]]
   mock_log="$(cat "$TD_MOCK_OUTPUT")"
   [[ "$mock_log" == *"--account=research"* ]]
   [[ "$mock_log" == *"--time=02:30:00"* ]]
