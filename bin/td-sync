@@ -257,6 +257,7 @@ if [[ -n "$TD_RSYNC_OPTS" ]]; then
 fi
 rsync_opts+=("$TD_SRC" "$TD_DEST")
 
+set +e
 {
   printf 'Tiny Data Sync job: %s\n' "$JOB_NAME"
   printf 'Started: %s\n' "$timestamp"
@@ -266,9 +267,28 @@ rsync_opts+=("$TD_SRC" "$TD_DEST")
   rsync "${rsync_opts[@]}"
 } &>"$log_file"
 rsync_status=$?
+set -e
+
+requeue_note="Requeue not requested"
 
 if [[ $rsync_status -ne 0 ]]; then
   printf 'rsync exited with status %s\n' "$rsync_status" >>"$log_file"
+  requeue_note="Job not requeued; rsync exited with status $rsync_status"
+fi
+
+if [[ -n "$TD_SUBMIT_INTERVAL" ]]; then
+  if [[ $rsync_status -eq 0 ]]; then
+    if sbatch --job-name="$JOB_NAME" --time="$TD_SLURM_RUNTIME" --account="$TD_SLURM_ACCOUNT" --begin="now+${TD_SUBMIT_INTERVAL}" "$SELF_PATH"; then
+      requeue_note="Next run scheduled after $TD_SUBMIT_INTERVAL"
+    else
+      printf 'Unable to requeue job with interval %s\n' "$TD_SUBMIT_INTERVAL" >>"$log_file"
+      requeue_note="Failed to schedule next run; check logs"
+    fi
+  else
+    requeue_note="Job not requeued; rsync exited with status $rsync_status"
+  fi
+else
+  requeue_note="Requeue interval not set"
 fi
 
 {
@@ -279,6 +299,7 @@ fi
   if [[ -n "$TD_RSYNC_OPTS" ]]; then
     printf 'Additional rsync options: %s\n' "$TD_RSYNC_OPTS"
   fi
+  printf 'Requeue status: %s\n' "$requeue_note"
   printf 'Log file: %s\n\n' "$log_file"
   printf 'Last 200 lines of log:\n'
   tail -n 200 "$log_file"
@@ -301,11 +322,8 @@ if [[ -n "$TD_NOTIFY" && -n "$MAILER_CMD" ]]; then
   done
 fi
 
-if [[ -n "$TD_SUBMIT_INTERVAL" ]]; then
-  if ! sbatch --job-name="$JOB_NAME" --time="$TD_SLURM_RUNTIME" --account="$TD_SLURM_ACCOUNT" --begin="now+${TD_SUBMIT_INTERVAL}" "$SELF_PATH"; then
-    printf 'Unable to requeue job with interval %s\n' "$TD_SUBMIT_INTERVAL" >>"$log_file"
-    exit 1
-  fi
+if [[ $rsync_status -ne 0 ]]; then
+  exit "$rsync_status"
 fi
 EOF
   } >"$job_script_path"

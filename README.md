@@ -89,3 +89,7 @@ TD_RSYNC_OPTS="--filter='- .venv' --filter='- __pycache__'"
 ```
 
 Tiny Data Sync evaluates these options inside the generated job script, so each quoted segment is preserved and forwarded to `rsync` without additional escaping.
+
+### Failure Handling
+
+If `rsync` exits with a non-zero status, Tiny Data Sync captures the full log, sends a summary that highlights the failure, and **does not** requeue the job. Once the underlying issue is resolved, rerun `td-sync` manually to schedule the next successful iteration.
