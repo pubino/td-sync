@@ -239,6 +239,8 @@ mkdir -p "${TD_LOG_DIR}"
 
 timestamp="$(date +"%Y%m%dT%H%M%S")"
 log_file="${TD_LOG_DIR}/${LOG_BASENAME}_${timestamp}.log"
+summary_file="$(mktemp)"
+trap 'rm -f "$summary_file"' EXIT
 
 rsync_opts=("-av")
 if [[ "$TD_DRY_RUN" == "1" ]]; then
@@ -260,6 +262,16 @@ if [[ $rsync_status -ne 0 ]]; then
   printf 'rsync exited with status %s\n' "$rsync_status" >>"$log_file"
 fi
 
+{
+  printf 'Tiny Data Sync job: %s\n' "$JOB_NAME"
+  printf 'Started: %s\n' "$timestamp"
+  printf 'Dry run: %s\n' "$TD_DRY_RUN"
+  printf 'Rsync exit status: %s\n' "$rsync_status"
+  printf 'Log file: %s\n\n' "$log_file"
+  printf 'Last 200 lines of log:\n'
+  tail -n 200 "$log_file"
+} >"$summary_file"
+
 if [[ -n "$TD_NOTIFY" && -n "$MAILER_CMD" ]]; then
   IFS=',' read -r -a recipients <<<"$TD_NOTIFY"
   for recipient in "${recipients[@]}"; do
@@ -269,16 +281,16 @@ if [[ -n "$TD_NOTIFY" && -n "$MAILER_CMD" ]]; then
       {
         printf 'To: %s\n' "$recipient"
         printf 'Subject: Tiny Data Sync results for %s\n\n' "$JOB_NAME"
-        cat "$log_file"
+        cat "$summary_file"
       } | "$MAILER_CMD" "$recipient"
     else
-      "$MAILER_CMD" -s "Tiny Data Sync results for $JOB_NAME" "$recipient" <"$log_file"
+      "$MAILER_CMD" -s "Tiny Data Sync results for $JOB_NAME" "$recipient" <"$summary_file"
     fi
   done
 fi
 
 if [[ -n "$TD_SUBMIT_INTERVAL" ]]; then
-  if ! sbatch --job-name="$JOB_NAME" --time="$TD_SLURM_RUNTIME" --account="$TD_SLURM_ACCOUNT" --begin="+${TD_SUBMIT_INTERVAL}" "$SELF_PATH"; then
+  if ! sbatch --job-name="$JOB_NAME" --time="$TD_SLURM_RUNTIME" --account="$TD_SLURM_ACCOUNT" --begin="now+${TD_SUBMIT_INTERVAL}" "$SELF_PATH"; then
     printf 'Unable to requeue job with interval %s\n' "$TD_SUBMIT_INTERVAL" >>"$log_file"
     exit 1
   fi
