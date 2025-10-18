@@ -1,6 +1,8 @@
 # Tiny Data Sync
 
-Tiny Data Sync schedules recurring `rsync` synchronisations through Slurm. It ingests `.env` configuration profiles and produces self-resubmitting batch jobs that keep pairs of directories in sync on a predictable cadence.
+Tiny Data Sync schedules recurring `rsync` synchronizations through Slurm.
+
+The script ingests `.env` configuration profiles and produces self-resubmitting batch jobs that keep pairs of directories in sync on a predictable cadence.
 
 ## Features
 
@@ -50,3 +52,28 @@ If `TD_LOG_RETENTION_DAYS` is set, Tiny Data Sync purges logs older than the con
 ## Docker Image
 
 The Dockerfile under `docker/` uses Debian Bookworm, respects the host architecture via `TARGETPLATFORM`, installs `bats-core`, and defaults to executing the Bats test suite.
+
+## Example Usage
+
+Below is a representative profile and command sequence for a project that mirrors data from a scratch volume to a long-term storage area every week:
+
+1. Create a profile such as `~/ .config/td-sync.d/data-sync.env` containing:
+
+	```env
+	TD_SRC=/scratch/project/data/
+	TD_DEST=/archive/project/data/
+	TD_SUBMIT_INTERVAL=7days
+	TD_SLURM_ACCOUNT=research
+	TD_NOTIFY=user@example.edu
+	TD_DRY_RUN=1
+	TD_SLURM_RUNTIME=02:00:00
+	```
+
+2. Export any optional runtime variables, then execute the scheduler:
+
+	```bash
+	export TD_LOG_RETENTION_DAYS=7
+	td-sync/bin/td-sync
+	```
+
+3. Tiny Data Sync will submit a Slurm job that performs an `rsync --dry-run`, writes a log under `logs/`, emails a short summary to the specified recipient, and requeues itself to run again after seven days. Switching `TD_DRY_RUN` to `0` promotes the synchronization from a preview to a real transfer.
