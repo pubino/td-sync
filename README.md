@@ -1,6 +1,8 @@
 # Tiny Data Sync
 
-Tiny Data Sync schedules recurring `rsync` synchronisations through Slurm. It ingests `.env` configuration profiles and produces self-resubmitting batch jobs that keep pairs of directories in sync on a predictable cadence.
+Tiny Data Sync schedules recurring `rsync` synchronizations through SLURM.
+
+The script ingests `.env` configuration profiles and produces self-resubmitting batch jobs that keep pairs of directories in sync on a predictable cadence.
 
 ## Features
 
@@ -41,7 +43,7 @@ Optional keys:
 
 ## Test Mode
 
-Setting `TD_TEST_MODE` to `1` or `true` prepends `mocks/bin` to `PATH`, replacing `sbatch`, `mail`, and `sendmail` with test doubles. Use this when running unit tests or developing on a system without Slurm or a mail transfer agent.
+Setting `TD_TEST_MODE` to `1` or `true` prepends `mocks/bin` to `PATH`, replacing `sbatch`, `mail`, and `sendmail` with test doubles. Use this when running unit tests or developing on a system without SLURM or a mail transfer agent.
 
 ## Log Retention
 
