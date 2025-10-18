@@ -329,10 +329,12 @@ submit_profile() {
 }
 
 main() {
-  if [[ ${1:-} == "--help" || ${1:-} == "-h" ]]; then
-    print_help
-    exit 0
-  fi
+  case "${1:-}" in
+    -h|--help)
+      print_help
+      exit 0
+      ;;
+  esac
 
   TD_HOME="$(resolve_td_home || true)"
   [[ -n "$TD_HOME" ]] || fatal "Unable to determine TD_HOME. Set TD_HOME and retry."
@@ -362,8 +364,8 @@ main() {
 
   local config_dir
   local config_from_env=0
-  if [[ -v TD_CONFIG_DIR ]]; then
-    config_dir="${TD_CONFIG_DIR}";
+  if [[ -n ${TD_CONFIG_DIR+x} ]]; then
+    config_dir="${TD_CONFIG_DIR}"
     config_from_env=1
   else
     config_dir="$HOME/.config/td-sync.d"
@@ -381,7 +383,7 @@ main() {
   fi
 
   local log_dir
-  if [[ -v TD_LOG_DIR ]]; then
+  if [[ -n ${TD_LOG_DIR+x} ]]; then
     log_dir="$TD_LOG_DIR"
   else
     log_dir="$PWD/logs"
